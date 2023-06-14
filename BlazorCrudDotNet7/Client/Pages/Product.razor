@@ -1,0 +1,93 @@
+﻿@page "/product"
+@page "/product/{id:int}"
+@inject IProductService ProductService
+@inject NavigationManager NavigationManager
+
+
+@if (Id is null)
+{
+    <PageTitle>Create new Product</PageTitle>
+    <h3>Create New Product</h3>
+}
+else
+{
+    <PageTitle>Edit @product.Title</PageTitle>
+    <h3>Edit @product.Title</h3>
+
+}
+
+<EditForm Model="product" OnSubmit="HandleSubmit">
+    <div class="mb-3">
+        <label for="title" class="form-label">Title</label>
+        <InputText id="title" @bind-Value="product.Title" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label for="category" class="form-label">Category</label>
+        <InputSelect id="category" @bind-Value="product.CategoryId" class="form-select">
+            <option selected>Choose Category</option>
+            @foreach (var category in ProductService.Categories)
+            {
+                <option value="@category.Id" class="">@category.Title</option>
+            }
+        </InputSelect>
+    </div>
+    <div class="mb-3">
+        <label for="price" class="form-label">Price</label>
+        <InputNumber id="title" @bind-Value="product.Price" class="form-control" />
+    </div>
+    <br/>
+    <button type="submit" class="btn btn-primary">@btnText</button>
+
+    @if (Id != null)
+    {
+        <button type="button" class="btn btn-danger mx-2" @onclick="HandleDelete">
+            Delete Product
+        </button>        
+    }
+</EditForm>
+
+@code {
+
+    [Parameter]
+    public int? Id { get; set; }
+    BlazorCrudDotNet7.Shared.Product product =
+        new BlazorCrudDotNet7.Shared.Product { Title = "New Product" };
+
+    string btnText = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        btnText = Id == null ? "Create New Product" : "Update Product";
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id is not null)
+        {
+            var result = await ProductService.GetProductById((int)Id);
+            if (result is not null)
+            {
+                product = result;
+            }
+            else
+            {
+                NavigationManager.NavigateTo("/product");
+
+            }
+        }
+    }
+
+    async Task HandleSubmit()
+    {
+        if (Id is null)
+            await ProductService.CreateProduct(product);
+        else
+            await ProductService.UpdateProduct(product);
+    }
+
+    async Task HandleDelete()
+    {
+        await ProductService.DeleteProduct(product.Id);
+    }
+}
